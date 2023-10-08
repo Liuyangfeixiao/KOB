@@ -1,9 +1,17 @@
 <template>
   <div>
-    Hello World!
+    <div>Bot name: </div>
+    <div>Bot power: </div>
   </div>
   <router-view/>
 </template>
+
+<script setup>
+import { getCurrentInstance } from 'vue';
+const { proxy } = getCurrentInstance()
+const res = await proxy.$http.get('pk/getbotinfo/')
+console.log(res)
+</script>
 
 <style>
 #app {
