@@ -1,37 +1,24 @@
 <template>
   <div>
-    <div>Bot name: </div>
-    <div>Bot power: </div>
+    <div v-for="name, idx in names" :key="idx">Botname: {{ name }}</div>
   </div>
   <router-view/>
 </template>
 
 <script setup>
-import { getCurrentInstance } from 'vue';
-const { proxy } = getCurrentInstance()
-const res = await proxy.$http.get('pk/getbotinfo/')
-console.log(res)
+import { onMounted, ref, inject } from 'vue';
+const axios = inject('axios')
+const names = ref([])
+onMounted(async () => {
+  const res = await axios.get("pk/getbotinfo/")
+  names.value = res.data
+})
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-
-nav {
-  padding: 30px;
-}
-
-nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
+body {
+  background-image: url("@/assets/background.png");
+  background-size: cover;
 }
 </style>
+
