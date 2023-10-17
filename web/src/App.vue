@@ -1,23 +1,17 @@
 <template>
-  <div>
-    <div v-for="name, idx in names" :key="idx">Botname: {{ name }}</div>
-  </div>
+  <NavBar />
   <router-view/>
 </template>
 
 <script setup>
-import { onMounted, ref, inject } from 'vue';
-const axios = inject('axios')
-const names = ref([])
-onMounted(async () => {
-  const res = await axios.get("pk/getbotinfo/")
-  names.value = res.data
-})
+import NavBar from '@/components/NavBar.vue'
+import "bootstrap/dist/css/bootstrap.min.css"
+import "bootstrap/dist/js/bootstrap"
 </script>
 
 <style>
 body {
-  background-image: url("@/assets/background.png");
+  background-image: url("@/assets/images/background.png");
   background-size: cover;
 }
 </style>
