@@ -39,7 +39,7 @@ const login = () => {
             store.dispatch("getinfo", {
                 success() {
                     router.push({name: 'home'});
-                    console.log(store.state.user);
+                    // console.log(store.state.user);
                 },
                 error(err) {
                     console.log(err);
@@ -47,6 +47,7 @@ const login = () => {
             })
         },
         error(err) {
+            alert("用户名或者密码错误");
             error_message.value = "用户名或密码错误";
             console.log(err);
         }

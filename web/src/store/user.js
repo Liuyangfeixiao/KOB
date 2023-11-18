@@ -28,7 +28,7 @@ export default {
             state.is_login = false;
         }
     },
-    actions: { // 异步函数
+    actions: { // 异步函数, 存放修改state值的函数
         login(context, data) {
             // const axios = inject("axios");
             // console.log(axios);
@@ -38,6 +38,7 @@ export default {
             })
             .then(function (resp) {
                 if (resp.data.error_message === "success") {
+                    localStorage.setItem("jwt_token", resp.data.token);
                     context.commit("updateToken", resp.data.token);
                     data.success();  // 获得用户信息并存储
                 } else {
@@ -68,6 +69,7 @@ export default {
             })
         },
         logout(context) {
+            localStorage.removeItem("jwt_token");
             context.commit("logout");
         }
     },
