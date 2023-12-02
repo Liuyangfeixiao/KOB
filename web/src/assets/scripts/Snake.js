@@ -67,10 +67,10 @@ export class Snake extends AcGameObject {
         for (let i = k; i > 0; i--) {
             this.cells[i] = JSON.parse(JSON.stringify(this.cells[i-1]));
         }
-
-        if (!this.gamemap.check_valid(this.next_cell)) {// 下一步操作非法，撞了墙或自己
-            this.status = "die";
-        }
+        // 变为后端判断
+        // if (!this.gamemap.check_valid(this.next_cell)) {// 下一步操作非法，撞了墙或自己
+        //     this.status = "die";
+        // }
     }
 
     update_move() {

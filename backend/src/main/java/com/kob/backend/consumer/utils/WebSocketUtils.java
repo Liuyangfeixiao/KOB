@@ -1,5 +1,7 @@
 package com.kob.backend.consumer.utils;
 
+import com.kob.backend.consumer.Game;
+import com.kob.backend.consumer.WebSocketServer;
 import com.kob.backend.pojo.User;
 
 import javax.jws.soap.SOAPBinding;
@@ -35,10 +37,20 @@ public class WebSocketUtils {
     }
     private static final WsSessionManager sessionManager = new WsSessionManager(); // 管理Session
     private static final CopyOnWriteArraySet<User> matchPool = new CopyOnWriteArraySet<>(); // 管理匹配用户
+    private static final ConcurrentHashMap<Integer, WebSocketServer> socketPool = new ConcurrentHashMap<>(); // 管理游戏
     private WebSocketUtils() {}
     
     public static void addSession(Object key, Session session) {
         sessionManager.addSession(key, session);
+    }
+    public static void addSocket(Integer key, WebSocketServer socket) {
+        socketPool.put(key, socket);
+    }
+    public static WebSocketServer getSocket(Integer key) {
+        return socketPool.get(key);
+    }
+    public static void removeSocket(Integer key) {
+        socketPool.remove(key);
     }
     
     public static void removeSession(Object key) {

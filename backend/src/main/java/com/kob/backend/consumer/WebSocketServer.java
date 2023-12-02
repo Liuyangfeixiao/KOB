@@ -4,7 +4,9 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.kob.backend.consumer.utils.JwtAuthentication;
 import com.kob.backend.consumer.utils.WebSocketUtils;
+import com.kob.backend.mapper.RecordMapper;
 import com.kob.backend.mapper.UserMapper;
+import com.kob.backend.pojo.Record;
 import com.kob.backend.pojo.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,12 +26,16 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
     // 注入一个UserMapper，用来查询用户信息，Spring中注入的是单例的
     // 由于WebSocketServer是多对象的，所以不能直接注入，需要通过一个set方法注入
     private static UserMapper userMapper;
+    public static RecordMapper recordMapper;
     private Game game = null;
     @Autowired
     private void setUserMapper(UserMapper userMapper) {
         WebSocketServer.userMapper = userMapper;  // 静态变量访问的时候需要用内存来访问
     }
-    
+    @Autowired
+    private void setRecordMapper(RecordMapper recordMapper) {
+        WebSocketServer.recordMapper = recordMapper;
+    }
     @OnOpen
     public void onOpen(Session session, @PathParam("token") String token) {
         // 先鉴权，如果鉴权通过则存储WebsocketSession，否则关闭连接
@@ -45,6 +51,7 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
             return;
         }
         WebSocketUtils.addSession(this.user.getId(), session);
+        WebSocketUtils.addSocket(this.user.getId(), this);
         System.out.println("WebSocket Connected! ID: " + session.getId());
     }
     @OnClose
@@ -53,6 +60,7 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
         
         if (this.user != null) {
             WebSocketUtils.removeSession(this.user.getId());  // 删除session
+            WebSocketUtils.removeSocket(this.user.getId());  // 删除socket
             WebSocketUtils.removeMatcher(this.user);  // 删除匹配池用户
         }
         System.out.println("WebSocket Disconnected! ID: " + session.getId());
@@ -69,14 +77,27 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
             
             // 我们要将GameMap存到A和B的连接中，目前先用局部变量保存
             // 生成地图
-            Game game = new Game(13, 14, 20);
+            Game game = new Game(13, 14, 20, a.getId(), b.getId());
             game.createMap();
+            WebSocketUtils.getSocket(a.getId()).game = game;
+            WebSocketUtils.getSocket(b.getId()).game = game;
+            game.start();
+            
+            // 将游戏地图信息封装成一个JSON
+            JSONObject respGame = new JSONObject();
+            respGame.put("a_id", game.getPlayerA().getId());
+            respGame.put("a_sx", game.getPlayerA().getSx());
+            respGame.put("a_sy", game.getPlayerA().getSy());
+            respGame.put("b_id", game.getPlayerB().getId());
+            respGame.put("b_sx", game.getPlayerB().getSx());
+            respGame.put("b_sy", game.getPlayerB().getSy());
+            respGame.put("map", game.getG());
             // 向A发送B的具体信息
             JSONObject respA = new JSONObject();
             respA.put("event", "start-matching");
             respA.put("opponent_username", b.getUsername());
             respA.put("opponent_photo", b.getPhoto());
-            respA.put("gamemap", game.getG());
+            respA.put("game", respGame);
             // 获取A的连接, 向前端发消息
             WebSocketUtils.tryPush(a.getId(), respA.toJSONString());
             
@@ -85,7 +106,7 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
             respB.put("event", "start-matching");
             respB.put("opponent_username", a.getUsername());
             respB.put("opponent_photo", a.getPhoto());
-            respB.put("gamemap", game.getG());
+            respB.put("game", respGame);
             // 获取B的连接信息
             WebSocketUtils.tryPush(b.getId(), respB.toJSONString());
         }
@@ -95,6 +116,15 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
         System.out.println("stop matching");
         WebSocketUtils.removeMatcher(this.user);
     }
+    private void move(int direction) {
+        // 首先需要判断当前玩家是谁
+        if (game.getPlayerA().getId().equals(user.getId())) {
+            game.setNextStepA(direction);
+        } else if (game.getPlayerB().getId().equals(user.getId())) {
+            game.setNextStepB(direction);
+        }
+    }
+    
     @OnMessage
     public void OnMessage(String message, Session session) {  // 一般当作一个路由
         // 收到消息时处理消息
@@ -105,6 +135,8 @@ public class WebSocketServer {  // 每一个连接通过这个类的实例来维
             startMatching();
         } else if ("stop-matching".equals(event)) {
             stopMatching();
+        } else if ("move".equals(event)) {
+            move(data.getInteger("direction"));
         }
     }
     
